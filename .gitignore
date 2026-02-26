@@ -1,0 +1,27 @@
+# OS / IDE
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Node (backend/dashboard)
+node_modules/
+dist/
+build/
+coverage/
+
+# Android
+*.iml
+.gradle/
+local.properties
+/build/
+**/build/
+.idea/
+
+# ESP32 / PlatformIO
+.pio/
