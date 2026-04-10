@@ -1,0 +1,35 @@
+int redpin = 11;
+int bluepin = 10;
+int greenpin = 9;
+
+void setup() {
+  pinMode(redpin, OUTPUT);
+  pinMode(bluepin, OUTPUT);
+  pinMode(greenpin, OUTPUT);
+}
+
+void loop() {
+  // Red
+  analogWrite(redpin, 100);
+  analogWrite(greenpin, 100);
+  analogWrite(bluepin, 100);
+  delay(1000);
+
+  // Green
+  analogWrite(redpin, 0);
+  analogWrite(greenpin, 255);
+  analogWrite(bluepin, 0);
+  delay(1000);
+
+  // Blue
+  analogWrite(redpin, 0);
+  analogWrite(greenpin, 0);
+  analogWrite(bluepin, 255);
+  delay(1000);
+
+  // Off
+  analogWrite(redpin, 0);
+  analogWrite(greenpin, 0);
+  analogWrite(bluepin, 0);
+  delay(1000);
+}

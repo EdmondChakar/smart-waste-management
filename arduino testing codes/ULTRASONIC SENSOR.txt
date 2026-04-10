@@ -1,0 +1,54 @@
+const int trigPin = 10;
+const int echoPin = 11;
+
+float readDistanceCm() {
+  unsigned long duration;
+
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(5);
+
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(20);   // important for JSN-SR04T
+  digitalWrite(trigPin, LOW);
+
+  duration = pulseIn(echoPin, HIGH, 40000);
+
+  if (duration == 0) {
+    return -1;   // no echo
+  }
+
+  return duration * 0.0343 / 2.0;
+}
+
+void setup() {
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  Serial.begin(9600);
+}
+
+void loop() {
+  float sum = 0;
+  int count = 0;
+
+  for (int i = 0; i < 5; i++) {
+    float d = readDistanceCm();
+
+    if (d > 0) {
+      sum += d;
+      count++;
+    }
+
+    delay(80);
+  }
+
+  if (count == 0) {
+    Serial.println("No valid echo");
+  } else {
+    float avg = sum / count;
+    Serial.print("Average distance: ");
+    Serial.print(avg);
+    Serial.println(" cm");
+  }
+
+  delay(500);
+}
