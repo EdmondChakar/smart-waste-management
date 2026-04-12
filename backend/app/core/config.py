@@ -17,6 +17,15 @@ class Settings:
     DB_NAME: str = os.getenv("DB_NAME", "smart_waste")
     DB_USER: str = os.getenv("DB_USER", "postgres")
     DB_PASSWORD: str = os.getenv("DB_PASSWORD", "")
+    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "change-this-in-production")
+    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(
+        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "60")
+    )
+    CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "")
+    BIN_FULL_THRESHOLD_PCT: float = float(
+        os.getenv("BIN_FULL_THRESHOLD_PCT", "80")
+    )
 
     @property
     def DATABASE_URL(self) -> str:
@@ -24,6 +33,14 @@ class Settings:
             f"postgresql+psycopg2://{self.DB_USER}:{self.DB_PASSWORD}"
             f"@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
         )
+
+    @property
+    def CORS_ORIGINS_LIST(self) -> list[str]:
+        return [
+            origin.strip()
+            for origin in self.CORS_ORIGINS.split(",")
+            if origin.strip()
+        ]
 
 
 settings = Settings()
