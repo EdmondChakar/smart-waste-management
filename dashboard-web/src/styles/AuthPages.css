@@ -3,7 +3,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f5f7fb;
+  background:
+    radial-gradient(circle at top left, rgba(34, 197, 94, 0.12), transparent 28%),
+    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 25%),
+    linear-gradient(180deg, #f5f7fb 0%, #eef4ff 100%);
   padding: 24px;
 }
 
@@ -84,6 +87,11 @@
 
 .auth-button:hover {
   background: #1d4ed8;
+}
+
+.auth-button:disabled {
+  background: #93c5fd;
+  cursor: not-allowed;
 }
 
 .auth-footer-text {

@@ -7,6 +7,9 @@ from app.api.devices import router as devices_router
 from app.api.iot import router as iot_router
 from app.api.lookups import router as lookups_router
 from app.api.meta import router as meta_router
+from app.api.points import router as points_router
+from app.api.rewards import router as rewards_router
+from app.api.scan import router as scan_router
 from app.api.system import router as system_router
 from app.api.users import router as users_router
 
@@ -21,3 +24,6 @@ api_router.include_router(bins_router)
 api_router.include_router(devices_router)
 api_router.include_router(iot_router)
 api_router.include_router(lookups_router)
+api_router.include_router(rewards_router)
+api_router.include_router(scan_router)
+api_router.include_router(points_router)

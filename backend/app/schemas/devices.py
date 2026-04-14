@@ -23,6 +23,12 @@ class DeviceCreateResponse(BaseModel):
     api_key: str
 
 
+class DeviceApiKeyResetResponse(BaseModel):
+    message: str
+    device: DeviceRead
+    api_key: str
+
+
 class DeviceListResponse(BaseModel):
     count: int
     devices: list[DeviceRead]

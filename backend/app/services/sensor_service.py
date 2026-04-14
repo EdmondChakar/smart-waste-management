@@ -32,7 +32,10 @@ def ingest_sensor_reading(db: Session, payload: SensorReadingIngestRequest) -> d
         )
 
     captured_at = payload.captured_at or datetime.utcnow()
-    is_full = payload.fill_pct >= settings.BIN_FULL_THRESHOLD_PCT
+    is_full = (
+        payload.fill_pct >= settings.BIN_FULL_THRESHOLD_PCT
+        or payload.weight_kg >= settings.BIN_FULL_THRESHOLD_KG
+    )
 
     insert_reading_query = text("""
         INSERT INTO sensor_reading (

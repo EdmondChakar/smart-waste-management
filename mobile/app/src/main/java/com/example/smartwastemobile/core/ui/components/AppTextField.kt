@@ -16,7 +16,8 @@ fun AppTextField(
     onValueChange: (String) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    keyboardType: KeyboardType = KeyboardType.Text
 ) {
     OutlinedTextField(
         value = value,
@@ -35,7 +36,7 @@ fun AppTextField(
             keyboardType = if (isPassword) {
                 KeyboardType.Password
             } else {
-                KeyboardType.Text
+                keyboardType
             }
         )
     )

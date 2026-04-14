@@ -7,6 +7,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 
 from app.core.config import settings
+from app.core.roles import ROLE_ADMIN
 
 
 password_hasher = PasswordHash.recommended()
@@ -126,3 +127,15 @@ def authenticate_user(db: Session, email: str, password: str) -> dict:
         "token_type": "bearer",
         "user": _public_user(user)
     }
+
+
+def authenticate_admin(db: Session, email: str, password: str) -> dict:
+    login_response = authenticate_user(db, email, password)
+
+    if login_response["user"]["role_id"] != ROLE_ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account is not authorized for the admin dashboard"
+        )
+
+    return login_response

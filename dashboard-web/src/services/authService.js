@@ -1,7 +1,7 @@
-const AUTH_API_BASE_URL = "http://localhost:5000/api/admin/auth";
+import { buildApiUrl } from "./api";
 
 export async function loginAdmin(credentials) {
-    const response = await fetch(`${AUTH_API_BASE_URL}/login`, {
+    const response = await fetch(buildApiUrl("/admin/login"), {
         method: "POST",
         headers: {
         "Content-Type": "application/json"
@@ -12,14 +12,14 @@ export async function loginAdmin(credentials) {
     const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(data.message || "Login failed.");
+        throw new Error(data.detail || data.message || "Login failed.");
     }
 
     return data;
 }
 
 export async function signupAdmin(payload) {
-    const response = await fetch(`${AUTH_API_BASE_URL}/signup`, {
+    const response = await fetch(buildApiUrl("/admin/signup"), {
         method: "POST",
         headers: {
         "Content-Type": "application/json"
@@ -30,7 +30,7 @@ export async function signupAdmin(payload) {
     const data = await response.json();
 
     if (!response.ok) {
-        throw new Error(data.message || "Signup failed.");
+        throw new Error(data.detail || data.message || "Signup failed.");
     }
 
     return data;

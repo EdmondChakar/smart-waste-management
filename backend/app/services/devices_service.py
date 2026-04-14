@@ -98,6 +98,50 @@ def create_device_record(db: Session, device_data: DeviceCreate) -> dict:
     }
 
 
+def regenerate_device_api_key(db: Session, device_id: int) -> dict:
+    device_query = text("""
+        SELECT device_id, bin_id, device_uid, last_seen_at, is_active
+        FROM devices
+        WHERE device_id = :device_id;
+    """)
+    existing_device = db.execute(device_query, {"device_id": device_id}).fetchone()
+
+    if existing_device is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Device not found"
+        )
+
+    api_key = secrets.token_urlsafe(24)
+    api_key_hash = hash_password(api_key)
+
+    update_query = text("""
+        UPDATE devices
+        SET api_key_hash = :api_key_hash
+        WHERE device_id = :device_id;
+    """)
+    db.execute(
+        update_query,
+        {
+            "device_id": device_id,
+            "api_key_hash": api_key_hash
+        }
+    )
+    db.commit()
+
+    return {
+        "message": "Device API key regenerated successfully",
+        "device": {
+            "device_id": existing_device[0],
+            "bin_id": existing_device[1],
+            "device_uid": existing_device[2],
+            "last_seen_at": existing_device[3],
+            "is_active": existing_device[4]
+        },
+        "api_key": api_key
+    }
+
+
 def get_device_by_uid(db: Session, device_uid: str) -> dict | None:
     query = text("""
         SELECT device_id, bin_id, device_uid, api_key_hash, last_seen_at, is_active

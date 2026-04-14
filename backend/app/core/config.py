@@ -26,6 +26,10 @@ class Settings:
     BIN_FULL_THRESHOLD_PCT: float = float(
         os.getenv("BIN_FULL_THRESHOLD_PCT", "80")
     )
+    BIN_FULL_THRESHOLD_KG: float = float(
+        os.getenv("BIN_FULL_THRESHOLD_KG", "4.5")
+    )
+    ADMIN_SIGNUP_CODE: str = os.getenv("ADMIN_SIGNUP_CODE", "")
 
     @property
     def DATABASE_URL(self) -> str:

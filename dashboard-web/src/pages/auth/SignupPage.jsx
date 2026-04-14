@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import AuthInput from "../../components/auth/AuthInput";
 import AuthButton from "../../components/auth/AuthButton";
 import AuthPageLayout from "../../components/auth/AuthPageLayout";
 import AuthMessage from "../../components/auth/AuthMessage";
 import "../../styles/AuthPages.css";
 import { APP_ROUTES } from "../../constants/routes";
+import { signupAdmin } from "../../services/authService";
 
 export default function SignupPage() {
+    const navigate = useNavigate();
     const [formValues, setFormValues] = useState({
         fullName: "",
         email: "",
@@ -17,11 +19,14 @@ export default function SignupPage() {
     });
 
     const [errorMessage, setErrorMessage] = useState("");
+    const [successMessage, setSuccessMessage] = useState("");
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const handleInputChange = (event) => {
         const { name, value } = event.target;
 
         setErrorMessage("");
+        setSuccessMessage("");
 
         setFormValues((currentValues) => ({
         ...currentValues,
@@ -29,7 +34,7 @@ export default function SignupPage() {
         }));
     };
 
-    const handleSubmit = (event) => {
+    const handleSubmit = async (event) => {
         event.preventDefault();
 
         const { fullName, email, password, confirmPassword, adminCode } = formValues;
@@ -50,8 +55,28 @@ export default function SignupPage() {
             return;
         }
 
-        setErrorMessage("");
-        console.log("Signup form submitted:", formValues);
+        try {
+            setIsSubmitting(true);
+            setErrorMessage("");
+            setSuccessMessage("");
+
+            await signupAdmin({
+                full_name: fullName,
+                email,
+                password,
+                admin_code: adminCode
+            });
+
+            setSuccessMessage("Admin account created successfully. Redirecting to login...");
+
+            window.setTimeout(() => {
+                navigate(APP_ROUTES.adminLogin, { replace: true });
+            }, 1000);
+        } catch (error) {
+            setErrorMessage(error.message || "Signup failed.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
   return (
@@ -109,8 +134,11 @@ export default function SignupPage() {
         />
 
         <AuthMessage type="error">{errorMessage}</AuthMessage>
+        <AuthMessage type="success">{successMessage}</AuthMessage>
 
-        <AuthButton type="submit">Create Account</AuthButton>
+        <AuthButton type="submit" disabled={isSubmitting}>
+          {isSubmitting ? "Creating Account..." : "Create Account"}
+        </AuthButton>
         </form>
 
         <p className="auth-subtitle auth-footer-text">
