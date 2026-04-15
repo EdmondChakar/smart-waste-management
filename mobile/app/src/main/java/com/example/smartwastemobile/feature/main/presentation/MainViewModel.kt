@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.example.smartwastemobile.feature.points.data.PointsRepository
 import com.example.smartwastemobile.feature.points.data.model.PointsBalanceDto
 import com.example.smartwastemobile.feature.points.data.model.PointsHistoryItemDto
+import com.example.smartwastemobile.feature.redemptions.data.RedemptionsRepository
+import com.example.smartwastemobile.feature.redemptions.data.model.RedemptionDto
 import com.example.smartwastemobile.feature.rewards.data.RewardsRepository
 import com.example.smartwastemobile.feature.rewards.data.model.RewardDto
 import com.example.smartwastemobile.feature.scan.data.ScanRepository
@@ -24,6 +26,12 @@ data class MainUiState(
     val pointsBalance: PointsBalanceDto? = null,
     val pointsHistory: List<PointsHistoryItemDto> = emptyList(),
     val pointsErrorMessage: String? = null,
+    val isLoadingRedemptions: Boolean = false,
+    val redemptions: List<RedemptionDto> = emptyList(),
+    val redemptionsErrorMessage: String? = null,
+    val isSubmittingRedemption: Boolean = false,
+    val redeemingRewardId: Int? = null,
+    val redemptionFeedbackMessage: String? = null,
     val isSubmittingScan: Boolean = false,
     val scanErrorMessage: String? = null,
     val lastScanResult: ScanResultDto? = null
@@ -32,7 +40,8 @@ data class MainUiState(
 class MainViewModel(
     private val rewardsRepository: RewardsRepository,
     private val pointsRepository: PointsRepository,
-    private val scanRepository: ScanRepository
+    private val scanRepository: ScanRepository,
+    private val redemptionsRepository: RedemptionsRepository
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(MainUiState())
     val uiState: StateFlow<MainUiState> = _uiState.asStateFlow()
@@ -94,6 +103,72 @@ class MainViewModel(
     fun refreshAuthenticatedData() {
         refreshRewards()
         refreshPointsData()
+        refreshRedemptions()
+    }
+
+    fun refreshRedemptions() {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(isLoadingRedemptions = true, redemptionsErrorMessage = null)
+            }
+
+            try {
+                val redemptions = redemptionsRepository.getMyRedemptions(limit = 10)
+                _uiState.update {
+                    it.copy(
+                        isLoadingRedemptions = false,
+                        redemptions = redemptions,
+                        redemptionsErrorMessage = null
+                    )
+                }
+            } catch (exception: IllegalStateException) {
+                _uiState.update {
+                    it.copy(
+                        isLoadingRedemptions = false,
+                        redemptionsErrorMessage = exception.message
+                    )
+                }
+            }
+        }
+    }
+
+    fun redeemReward(rewardId: Int) {
+        viewModelScope.launch {
+            _uiState.update {
+                it.copy(
+                    isSubmittingRedemption = true,
+                    redeemingRewardId = rewardId,
+                    redemptionFeedbackMessage = null,
+                    redemptionsErrorMessage = null
+                )
+            }
+
+            try {
+                val response = redemptionsRepository.redeemReward(rewardId)
+                _uiState.update {
+                    it.copy(
+                        isSubmittingRedemption = false,
+                        redeemingRewardId = null,
+                        redemptionFeedbackMessage = response.message,
+                        pointsBalance = it.pointsBalance?.copy(
+                            currentPointsBalance = response.currentPointsBalance
+                        ) ?: it.pointsBalance
+                    )
+                }
+
+                refreshPointsData()
+                refreshRedemptions()
+            } catch (exception: IllegalStateException) {
+                _uiState.update {
+                    it.copy(
+                        isSubmittingRedemption = false,
+                        redeemingRewardId = null,
+                        redemptionFeedbackMessage = null,
+                        redemptionsErrorMessage = exception.message
+                    )
+                }
+            }
+        }
     }
 
     fun submitScan(qrRaw: String) {
@@ -165,12 +240,22 @@ class MainViewModel(
             )
         }
     }
+
+    fun clearRedemptionFeedback() {
+        _uiState.update {
+            it.copy(
+                redemptionFeedbackMessage = null,
+                redemptionsErrorMessage = null
+            )
+        }
+    }
 }
 
 class MainViewModelFactory(
     private val rewardsRepository: RewardsRepository,
     private val pointsRepository: PointsRepository,
-    private val scanRepository: ScanRepository
+    private val scanRepository: ScanRepository,
+    private val redemptionsRepository: RedemptionsRepository
 ) : ViewModelProvider.Factory {
     override fun <T : ViewModel> create(modelClass: Class<T>): T {
         if (modelClass.isAssignableFrom(MainViewModel::class.java)) {
@@ -178,7 +263,8 @@ class MainViewModelFactory(
             return MainViewModel(
                 rewardsRepository = rewardsRepository,
                 pointsRepository = pointsRepository,
-                scanRepository = scanRepository
+                scanRepository = scanRepository,
+                redemptionsRepository = redemptionsRepository
             ) as T
         }
 

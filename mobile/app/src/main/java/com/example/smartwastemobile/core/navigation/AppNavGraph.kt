@@ -22,6 +22,7 @@ import com.example.smartwastemobile.feature.main.presentation.LoadingScreen
 import com.example.smartwastemobile.feature.main.presentation.MainViewModel
 import com.example.smartwastemobile.feature.main.presentation.MainViewModelFactory
 import com.example.smartwastemobile.feature.points.data.PointsRepository
+import com.example.smartwastemobile.feature.redemptions.data.RedemptionsRepository
 import com.example.smartwastemobile.feature.rewards.data.RewardsRepository
 import com.example.smartwastemobile.feature.scan.data.ScanRepository
 
@@ -53,6 +54,12 @@ fun AppNavGraph() {
             sessionManager = sessionManager
         )
     }
+    val redemptionsRepository = remember {
+        RedemptionsRepository(
+            redemptionsApi = ApiClient.redemptionsApi,
+            sessionManager = sessionManager
+        )
+    }
     val authViewModel: AuthViewModel = viewModel(
         factory = AuthViewModelFactory(authRepository)
     )
@@ -60,7 +67,8 @@ fun AppNavGraph() {
         factory = MainViewModelFactory(
             rewardsRepository = rewardsRepository,
             pointsRepository = pointsRepository,
-            scanRepository = scanRepository
+            scanRepository = scanRepository,
+            redemptionsRepository = redemptionsRepository
         )
     )
     val uiState by authViewModel.uiState.collectAsState()
@@ -89,6 +97,12 @@ fun AppNavGraph() {
             pointsHistory = mainUiState.pointsHistory,
             isLoadingPoints = mainUiState.isLoadingPoints,
             pointsErrorMessage = mainUiState.pointsErrorMessage,
+            redemptions = mainUiState.redemptions,
+            isLoadingRedemptions = mainUiState.isLoadingRedemptions,
+            redemptionsErrorMessage = mainUiState.redemptionsErrorMessage,
+            isSubmittingRedemption = mainUiState.isSubmittingRedemption,
+            redeemingRewardId = mainUiState.redeemingRewardId,
+            redemptionFeedbackMessage = mainUiState.redemptionFeedbackMessage,
             isSubmittingScan = mainUiState.isSubmittingScan,
             scanErrorMessage = mainUiState.scanErrorMessage,
             lastScanResult = mainUiState.lastScanResult,
@@ -96,6 +110,9 @@ fun AppNavGraph() {
             onSignOut = authViewModel::signOut,
             onRefreshRewards = mainViewModel::refreshRewards,
             onRefreshPoints = mainViewModel::refreshPointsData,
+            onRefreshRedemptions = mainViewModel::refreshRedemptions,
+            onRedeemReward = mainViewModel::redeemReward,
+            onClearRedemptionFeedback = mainViewModel::clearRedemptionFeedback,
             onSubmitScan = mainViewModel::submitScan,
             onClearScanFeedback = mainViewModel::clearScanFeedback,
             onScanCancelled = mainViewModel::markScanCancelled,

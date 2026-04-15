@@ -20,6 +20,7 @@ import com.example.smartwastemobile.core.ui.components.AppPrimaryButton
 import com.example.smartwastemobile.feature.auth.data.model.UserDto
 import com.example.smartwastemobile.feature.points.data.model.PointsBalanceDto
 import com.example.smartwastemobile.feature.points.data.model.PointsHistoryItemDto
+import com.example.smartwastemobile.feature.redemptions.data.model.RedemptionDto
 
 @Composable
 fun AccountScreen(
@@ -30,8 +31,12 @@ fun AccountScreen(
     pointsHistory: List<PointsHistoryItemDto>,
     isLoadingPoints: Boolean,
     pointsErrorMessage: String?,
+    redemptions: List<RedemptionDto>,
+    isLoadingRedemptions: Boolean,
+    redemptionsErrorMessage: String?,
     onRefreshProfile: () -> Unit,
     onRefreshPoints: () -> Unit,
+    onRefreshRedemptions: () -> Unit,
     onSignOut: () -> Unit
 ) {
     if (isLoading && user == null) {
@@ -105,6 +110,8 @@ fun AccountScreen(
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(text = "Total Earned: ${pointsBalance.totalEarned}")
                             Spacer(modifier = Modifier.height(4.dp))
+                            Text(text = "Total Redeemed: ${pointsBalance.totalRedeemed}")
+                            Spacer(modifier = Modifier.height(4.dp))
                             Text(text = "Total Transactions: ${pointsBalance.totalTransactions}")
                         }
 
@@ -163,6 +170,82 @@ fun AccountScreen(
                             style = MaterialTheme.typography.bodySmall
                         )
                     }
+                }
+            }
+        }
+
+        item {
+            Surface(
+                tonalElevation = 2.dp,
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = "My Redemptions",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    when {
+                        isLoadingRedemptions && redemptions.isEmpty() -> {
+                            Text(text = "Loading redemption history...")
+                        }
+
+                        !redemptionsErrorMessage.isNullOrBlank() && redemptions.isEmpty() -> {
+                            Text(
+                                text = redemptionsErrorMessage,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                        }
+
+                        redemptions.isEmpty() -> {
+                            Text(text = "No redemption requests yet.")
+                        }
+
+                        else -> {
+                            redemptions.forEach { redemption ->
+                                Surface(
+                                    modifier = Modifier.padding(top = 8.dp),
+                                    tonalElevation = 1.dp,
+                                    shape = MaterialTheme.shapes.medium
+                                ) {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        Text(
+                                            text = redemption.rewardTitle,
+                                            style = MaterialTheme.typography.titleSmall
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(text = "Status: ${redemption.statusCode}")
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(text = "Points Spent: ${redemption.pointsSpent}")
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "Requested At: ${redemption.requestedAt}",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                        redemption.fulfilledAt?.let { fulfilledAt ->
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(
+                                                text = "Fulfilled At: $fulfilledAt",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                        redemption.voucherCode?.let { voucherCode ->
+                                            Spacer(modifier = Modifier.height(4.dp))
+                                            Text(text = "Voucher: $voucherCode")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    AppPrimaryButton(
+                        text = if (isLoadingRedemptions) "Refreshing..." else "Refresh Redemptions",
+                        enabled = !isLoadingRedemptions,
+                        onClick = onRefreshRedemptions
+                    )
                 }
             }
         }

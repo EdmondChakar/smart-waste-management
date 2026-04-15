@@ -17,6 +17,7 @@ import com.example.smartwastemobile.feature.auth.data.model.UserDto
 import com.example.smartwastemobile.feature.home.presentation.HomeScreen
 import com.example.smartwastemobile.feature.points.data.model.PointsBalanceDto
 import com.example.smartwastemobile.feature.points.data.model.PointsHistoryItemDto
+import com.example.smartwastemobile.feature.redemptions.data.model.RedemptionDto
 import com.example.smartwastemobile.feature.rewards.data.model.RewardDto
 import com.example.smartwastemobile.feature.rewards.presentation.RewardsScreen
 import com.example.smartwastemobile.feature.scan.data.model.ScanResultDto
@@ -41,6 +42,12 @@ fun AppShellScreen(
     pointsHistory: List<PointsHistoryItemDto>,
     isLoadingPoints: Boolean,
     pointsErrorMessage: String?,
+    redemptions: List<RedemptionDto>,
+    isLoadingRedemptions: Boolean,
+    redemptionsErrorMessage: String?,
+    isSubmittingRedemption: Boolean,
+    redeemingRewardId: Int?,
+    redemptionFeedbackMessage: String?,
     isSubmittingScan: Boolean,
     scanErrorMessage: String?,
     lastScanResult: ScanResultDto?,
@@ -48,6 +55,9 @@ fun AppShellScreen(
     onSignOut: () -> Unit,
     onRefreshRewards: () -> Unit,
     onRefreshPoints: () -> Unit,
+    onRefreshRedemptions: () -> Unit,
+    onRedeemReward: (Int) -> Unit,
+    onClearRedemptionFeedback: () -> Unit,
     onSubmitScan: (String) -> Unit,
     onClearScanFeedback: () -> Unit,
     onScanCancelled: () -> Unit,
@@ -92,9 +102,16 @@ fun AppShellScreen(
 
                 MainTab.REWARDS -> RewardsScreen(
                     rewards = rewards,
+                    pointsBalance = pointsBalance,
                     isLoading = isLoadingRewards,
                     errorMessage = rewardsErrorMessage,
-                    onRetry = onRefreshRewards
+                    isSubmittingRedemption = isSubmittingRedemption,
+                    redeemingRewardId = redeemingRewardId,
+                    redemptionFeedbackMessage = redemptionFeedbackMessage,
+                    redemptionErrorMessage = redemptionsErrorMessage,
+                    onRetry = onRefreshRewards,
+                    onRedeemReward = onRedeemReward,
+                    onClearRedemptionFeedback = onClearRedemptionFeedback
                 )
 
                 MainTab.ACCOUNT -> AccountScreen(
@@ -105,8 +122,12 @@ fun AppShellScreen(
                     pointsHistory = pointsHistory,
                     isLoadingPoints = isLoadingPoints,
                     pointsErrorMessage = pointsErrorMessage,
+                    redemptions = redemptions,
+                    isLoadingRedemptions = isLoadingRedemptions,
+                    redemptionsErrorMessage = redemptionsErrorMessage,
                     onRefreshProfile = onRefreshProfile,
                     onRefreshPoints = onRefreshPoints,
+                    onRefreshRedemptions = onRefreshRedemptions,
                     onSignOut = onSignOut
                 )
             }

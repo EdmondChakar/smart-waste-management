@@ -20,14 +20,22 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.example.smartwastemobile.core.ui.components.AppPrimaryButton
+import com.example.smartwastemobile.feature.points.data.model.PointsBalanceDto
 import com.example.smartwastemobile.feature.rewards.data.model.RewardDto
 
 @Composable
 fun RewardsScreen(
     rewards: List<RewardDto>,
+    pointsBalance: PointsBalanceDto?,
     isLoading: Boolean,
     errorMessage: String?,
-    onRetry: () -> Unit
+    isSubmittingRedemption: Boolean,
+    redeemingRewardId: Int?,
+    redemptionFeedbackMessage: String?,
+    redemptionErrorMessage: String?,
+    onRetry: () -> Unit,
+    onRedeemReward: (Int) -> Unit,
+    onClearRedemptionFeedback: () -> Unit
 ) {
     when {
         isLoading && rewards.isEmpty() -> {
@@ -107,8 +115,39 @@ fun RewardsScreen(
                     )
                 }
 
+                pointsBalance?.let { balance ->
+                    item {
+                        Text(
+                            text = "Current points: ${balance.currentPointsBalance}",
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
+                }
+
+                if (!redemptionFeedbackMessage.isNullOrBlank()) {
+                    item {
+                        Text(text = redemptionFeedbackMessage)
+                    }
+                }
+
+                if (!redemptionErrorMessage.isNullOrBlank()) {
+                    item {
+                        Text(
+                            text = redemptionErrorMessage,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    }
+                }
+
                 items(rewards, key = { it.rewardId }) { reward ->
-                    RewardCard(reward = reward)
+                    RewardCard(
+                        reward = reward,
+                        currentPointsBalance = pointsBalance?.currentPointsBalance,
+                        isSubmittingRedemption = isSubmittingRedemption,
+                        isRedeemingThisReward = redeemingRewardId == reward.rewardId,
+                        onRedeemReward = onRedeemReward,
+                        onClearRedemptionFeedback = onClearRedemptionFeedback
+                    )
                 }
 
                 item {
@@ -124,7 +163,16 @@ fun RewardsScreen(
 }
 
 @Composable
-private fun RewardCard(reward: RewardDto) {
+private fun RewardCard(
+    reward: RewardDto,
+    currentPointsBalance: Int?,
+    isSubmittingRedemption: Boolean,
+    isRedeemingThisReward: Boolean,
+    onRedeemReward: (Int) -> Unit,
+    onClearRedemptionFeedback: () -> Unit
+) {
+    val hasEnoughPoints = currentPointsBalance == null || currentPointsBalance >= reward.pointsCost
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         tonalElevation = 2.dp,
@@ -144,6 +192,27 @@ private fun RewardCard(reward: RewardDto) {
             Text(
                 text = "${reward.pointsCost} points",
                 style = MaterialTheme.typography.labelLarge
+            )
+            if (!hasEnoughPoints) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Not enough points yet for this reward.",
+                    color = MaterialTheme.colorScheme.error,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            AppPrimaryButton(
+                text = if (isRedeemingThisReward && isSubmittingRedemption) {
+                    "Redeeming..."
+                } else {
+                    "Redeem Reward"
+                },
+                enabled = !isSubmittingRedemption && hasEnoughPoints,
+                onClick = {
+                    onClearRedemptionFeedback()
+                    onRedeemReward(reward.rewardId)
+                }
             )
         }
     }

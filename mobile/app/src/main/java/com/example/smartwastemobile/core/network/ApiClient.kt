@@ -2,6 +2,7 @@ package com.example.smartwastemobile.core.network
 
 import com.example.smartwastemobile.feature.auth.data.remote.AuthApi
 import com.example.smartwastemobile.feature.points.data.remote.PointsApi
+import com.example.smartwastemobile.feature.redemptions.data.remote.RedemptionsApi
 import com.example.smartwastemobile.feature.rewards.data.remote.RewardsApi
 import com.example.smartwastemobile.feature.scan.data.remote.ScanApi
 import retrofit2.Retrofit
@@ -25,6 +26,10 @@ object ApiClient {
 
     val pointsApi: PointsApi by lazy {
         retrofit.create(PointsApi::class.java)
+    }
+
+    val redemptionsApi: RedemptionsApi by lazy {
+        retrofit.create(RedemptionsApi::class.java)
     }
 
     val scanApi: ScanApi by lazy {
