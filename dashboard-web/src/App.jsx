@@ -7,6 +7,7 @@ import AdminBinsPage from "./pages/admin/AdminBinsPage";
 import AdminDashboardPage from "./pages/admin/AdminDashboardPage";
 import AdminDevicesPage from "./pages/admin/AdminDevicesPage";
 import AdminMapPage from "./pages/admin/AdminMapPage";
+import AdminRedemptionsPage from "./pages/admin/AdminRedemptionsPage";
 import AdminUsersPage from "./pages/admin/AdminUsersPage";
 import LoginPage from "./pages/auth/LoginPage";
 import SignupPage from "./pages/auth/SignupPage";
@@ -32,6 +33,10 @@ export default function App() {
             <Route path={APP_ROUTES.adminMap} element={<AdminMapPage />} />
             <Route path={APP_ROUTES.adminUsers} element={<AdminUsersPage />} />
             <Route path={APP_ROUTES.adminDevices} element={<AdminDevicesPage />} />
+            <Route
+              path={APP_ROUTES.adminRedemptions}
+              element={<AdminRedemptionsPage />}
+            />
           </Route>
         </Route>
       </Routes>
