@@ -1,26 +1,21 @@
 package com.example.smartwastemobile.feature.auth.presentation.signup
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.systemBarsPadding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
-import com.example.smartwastemobile.core.ui.components.AppPrimaryButton
-import com.example.smartwastemobile.core.ui.components.AppTextField
+import com.example.smartwastemobile.feature.auth.presentation.components.AuthField
+import com.example.smartwastemobile.feature.auth.presentation.components.AuthFooterLink
+import com.example.smartwastemobile.feature.auth.presentation.components.AuthMessageBanner
+import com.example.smartwastemobile.feature.auth.presentation.components.AuthPrimaryActionButton
+import com.example.smartwastemobile.feature.auth.presentation.components.AuthScreenContainer
 
 @Composable
 fun SignUpScreen(
@@ -35,35 +30,25 @@ fun SignUpScreen(
     var confirmPassword by remember { mutableStateOf("") }
     var validationMessage by remember { mutableStateOf<String?>(null) }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .systemBarsPadding()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally
+    AuthScreenContainer(
+        title = "Join Us",
+        subtitle = "Start earning points for recycling"
     ) {
-        Text(
-            text = "Sign Up",
-            style = MaterialTheme.typography.headlineMedium
-        )
-
-        Spacer(modifier = Modifier.height(24.dp))
-
-        AppTextField(
+        AuthField(
             value = email,
             onValueChange = {
                 email = it
                 validationMessage = null
                 onMessageShown()
             },
-            label = "Email",
+            label = "Email Address",
+            placeholder = "name@example.com",
             keyboardType = KeyboardType.Email
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        AppTextField(
+        AuthField(
             value = password,
             onValueChange = {
                 password = it
@@ -71,12 +56,13 @@ fun SignUpScreen(
                 onMessageShown()
             },
             label = "Password",
+            placeholder = "••••••••",
             isPassword = true
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(18.dp))
 
-        AppTextField(
+        AuthField(
             value = confirmPassword,
             onValueChange = {
                 confirmPassword = it
@@ -84,22 +70,23 @@ fun SignUpScreen(
                 onMessageShown()
             },
             label = "Confirm Password",
+            placeholder = "••••••••",
             isPassword = true
         )
 
         val messageToShow = validationMessage ?: errorMessage
-
         if (!messageToShow.isNullOrBlank()) {
             Spacer(modifier = Modifier.height(16.dp))
-            Text(
+            AuthMessageBanner(
                 text = messageToShow,
-                color = MaterialTheme.colorScheme.error
+                containerColor = Color(0xFFFEE2E2),
+                contentColor = Color(0xFFB91C1C)
             )
         }
 
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(26.dp))
 
-        AppPrimaryButton(
+        AuthPrimaryActionButton(
             text = if (isLoading) "Creating Account..." else "Create Account",
             enabled = !isLoading,
             onClick = {
@@ -120,13 +107,13 @@ fun SignUpScreen(
             }
         )
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(22.dp))
 
-        TextButton(
-            onClick = onNavigateToSignIn,
-            enabled = !isLoading
-        ) {
-            Text(text = "Already have an account? Sign In")
-        }
+        AuthFooterLink(
+            leadingText = "Already have an account? ",
+            actionText = "Sign In",
+            enabled = !isLoading,
+            onClick = onNavigateToSignIn
+        )
     }
 }

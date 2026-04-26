@@ -182,7 +182,7 @@ export default function AdminBinDetailPage() {
                 </div>
                 <div className="admin-action-item">
                   <strong>Readings refresh</strong>
-                  <p>This page refreshes every 30 seconds.</p>
+                  <p>This page refreshes every 10 seconds.</p>
                 </div>
               </div>
             </article>

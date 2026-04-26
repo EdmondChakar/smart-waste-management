@@ -11,24 +11,25 @@ def _serialize_reward_row(row) -> dict:
         "title": row[1],
         "description": row[2],
         "points_cost": row[3],
-        "is_active": row[4]
+        "is_active": row[4],
+        "is_featured": row[5]
     }
 
 
 def list_rewards(db: Session, active_only: bool = False) -> dict:
     if active_only:
         query = text("""
-            SELECT reward_id, title, description, points_cost, is_active
+            SELECT reward_id, title, description, points_cost, is_active, is_featured
             FROM rewards
             WHERE is_active = TRUE
-            ORDER BY reward_id;
+            ORDER BY points_cost, reward_id;
         """)
         result = db.execute(query)
     else:
         query = text("""
-            SELECT reward_id, title, description, points_cost, is_active
+            SELECT reward_id, title, description, points_cost, is_active, is_featured
             FROM rewards
-            ORDER BY reward_id;
+            ORDER BY points_cost, reward_id;
         """)
         result = db.execute(query)
 
@@ -42,7 +43,7 @@ def list_rewards(db: Session, active_only: bool = False) -> dict:
 
 def get_reward_by_id(db: Session, reward_id: int) -> dict | None:
     query = text("""
-        SELECT reward_id, title, description, points_cost, is_active
+        SELECT reward_id, title, description, points_cost, is_active, is_featured
         FROM rewards
         WHERE reward_id = :reward_id;
     """)
@@ -72,9 +73,9 @@ def create_reward_record(db: Session, reward_data: RewardCreate) -> dict:
         )
 
     insert_query = text("""
-        INSERT INTO rewards (title, description, points_cost, is_active)
-        VALUES (:title, :description, :points_cost, :is_active)
-        RETURNING reward_id, title, description, points_cost, is_active;
+        INSERT INTO rewards (title, description, points_cost, is_active, is_featured)
+        VALUES (:title, :description, :points_cost, :is_active, :is_featured)
+        RETURNING reward_id, title, description, points_cost, is_active, is_featured;
     """)
     result = db.execute(
         insert_query,
@@ -82,7 +83,8 @@ def create_reward_record(db: Session, reward_data: RewardCreate) -> dict:
             "title": reward_data.title,
             "description": reward_data.description,
             "points_cost": reward_data.points_cost,
-            "is_active": reward_data.is_active
+            "is_active": reward_data.is_active,
+            "is_featured": reward_data.is_featured
         }
     )
     db.commit()
@@ -130,9 +132,10 @@ def update_reward_record(db: Session, reward_id: int, reward_data: RewardUpdate)
             title = :title,
             description = :description,
             points_cost = :points_cost,
-            is_active = :is_active
+            is_active = :is_active,
+            is_featured = :is_featured
         WHERE reward_id = :reward_id
-        RETURNING reward_id, title, description, points_cost, is_active;
+        RETURNING reward_id, title, description, points_cost, is_active, is_featured;
     """)
     result = db.execute(
         update_query,
@@ -141,7 +144,8 @@ def update_reward_record(db: Session, reward_id: int, reward_data: RewardUpdate)
             "title": reward_data.title,
             "description": reward_data.description,
             "points_cost": reward_data.points_cost,
-            "is_active": reward_data.is_active
+            "is_active": reward_data.is_active,
+            "is_featured": reward_data.is_featured
         }
     )
     db.commit()

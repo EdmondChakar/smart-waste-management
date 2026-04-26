@@ -77,3 +77,14 @@ export function updateAdminRedemptionStatus(redemptionId, payload) {
     body: payload
   });
 }
+
+export function fetchAdminRewards() {
+  return authorizedFetch("/admin/rewards");
+}
+
+export function updateAdminReward(rewardId, payload) {
+  return authorizedRequest(`/admin/rewards/${rewardId}`, {
+    method: "PUT",
+    body: payload
+  });
+}

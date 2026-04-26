@@ -110,7 +110,7 @@ export default function AdminMapPage() {
         />
         <AdminStatCard
           label="Refresh interval"
-          value="30s"
+          value="10s"
           helper="Map polling interval."
         />
       </section>

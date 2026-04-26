@@ -313,6 +313,66 @@
     linear-gradient(180deg, #f8fbfd 0%, #eef5f9 100%);
 }
 
+.admin-map-surface--leaflet {
+  padding: 0;
+  background: #e9f1ed;
+}
+
+.admin-leaflet-map {
+  height: 420px;
+  width: 100%;
+}
+
+.admin-map-pin-wrap {
+  background: transparent;
+  border: none;
+}
+
+.admin-map-pin {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 72px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.18);
+}
+
+.admin-map-pin span {
+  position: relative;
+  z-index: 1;
+}
+
+.admin-map-pin::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: -8px;
+  width: 12px;
+  height: 12px;
+  background: inherit;
+  transform: translateX(-50%) rotate(45deg);
+  border-radius: 3px;
+}
+
+.admin-map-pin--safe {
+  background: #1d7a53;
+}
+
+.admin-map-pin--alert {
+  background: #c81e1e;
+}
+
+.admin-map-pin--selected {
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.9),
+    0 18px 36px rgba(15, 23, 42, 0.28);
+}
+
 .admin-map-grid {
   position: absolute;
   inset: 0;
@@ -428,6 +488,11 @@
 .admin-state-pill--muted {
   background: #e5e7eb;
   color: #4b5563;
+}
+
+.admin-state-pill--featured {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .admin-table-wrapper {
@@ -572,6 +637,15 @@
 
 .admin-action-button--danger:hover:not(:disabled) {
   background: #991b1b;
+}
+
+.admin-action-button--neutral {
+  background: #e5e7eb;
+  color: #334155;
+}
+
+.admin-action-button--neutral:hover:not(:disabled) {
+  background: #cbd5e1;
 }
 
 @media (max-width: 1080px) {

@@ -12,6 +12,7 @@ import com.example.smartwastemobile.feature.rewards.data.RewardsRepository
 import com.example.smartwastemobile.feature.rewards.data.model.RewardDto
 import com.example.smartwastemobile.feature.scan.data.ScanRepository
 import com.example.smartwastemobile.feature.scan.data.model.ScanResultDto
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,6 +33,7 @@ data class MainUiState(
     val isSubmittingRedemption: Boolean = false,
     val redeemingRewardId: Int? = null,
     val redemptionFeedbackMessage: String? = null,
+    val recentlyRedeemedRewardId: Int? = null,
     val isSubmittingScan: Boolean = false,
     val scanErrorMessage: String? = null,
     val lastScanResult: ScanResultDto? = null
@@ -134,22 +136,31 @@ class MainViewModel(
 
     fun redeemReward(rewardId: Int) {
         viewModelScope.launch {
+            val startedAtMs = System.currentTimeMillis()
+
             _uiState.update {
                 it.copy(
                     isSubmittingRedemption = true,
                     redeemingRewardId = rewardId,
                     redemptionFeedbackMessage = null,
-                    redemptionsErrorMessage = null
+                    redemptionsErrorMessage = null,
+                    recentlyRedeemedRewardId = null
                 )
             }
 
             try {
                 val response = redemptionsRepository.redeemReward(rewardId)
+                val elapsedMs = System.currentTimeMillis() - startedAtMs
+                val remainingMinimumLoadingMs = (1_000L - elapsedMs).coerceAtLeast(0L)
+                if (remainingMinimumLoadingMs > 0L) {
+                    delay(remainingMinimumLoadingMs)
+                }
                 _uiState.update {
                     it.copy(
                         isSubmittingRedemption = false,
                         redeemingRewardId = null,
                         redemptionFeedbackMessage = response.message,
+                        recentlyRedeemedRewardId = rewardId,
                         pointsBalance = it.pointsBalance?.copy(
                             currentPointsBalance = response.currentPointsBalance
                         ) ?: it.pointsBalance
@@ -158,12 +169,30 @@ class MainViewModel(
 
                 refreshPointsData()
                 refreshRedemptions()
+
+                delay(1400)
+                _uiState.update { state ->
+                    if (state.recentlyRedeemedRewardId == rewardId && !state.isSubmittingRedemption) {
+                        state.copy(
+                            recentlyRedeemedRewardId = null,
+                            redemptionFeedbackMessage = null
+                        )
+                    } else {
+                        state
+                    }
+                }
             } catch (exception: IllegalStateException) {
+                val elapsedMs = System.currentTimeMillis() - startedAtMs
+                val remainingMinimumLoadingMs = (1_000L - elapsedMs).coerceAtLeast(0L)
+                if (remainingMinimumLoadingMs > 0L) {
+                    delay(remainingMinimumLoadingMs)
+                }
                 _uiState.update {
                     it.copy(
                         isSubmittingRedemption = false,
                         redeemingRewardId = null,
                         redemptionFeedbackMessage = null,
+                        recentlyRedeemedRewardId = null,
                         redemptionsErrorMessage = exception.message
                     )
                 }
@@ -245,7 +274,8 @@ class MainViewModel(
         _uiState.update {
             it.copy(
                 redemptionFeedbackMessage = null,
-                redemptionsErrorMessage = null
+                redemptionsErrorMessage = null,
+                recentlyRedeemedRewardId = null
             )
         }
     }

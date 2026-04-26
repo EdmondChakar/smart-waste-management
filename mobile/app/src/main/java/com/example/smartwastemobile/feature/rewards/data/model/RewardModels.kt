@@ -15,5 +15,7 @@ data class RewardDto(
     @SerializedName("points_cost")
     val pointsCost: Int,
     @SerializedName("is_active")
-    val isActive: Boolean
+    val isActive: Boolean,
+    @SerializedName("is_featured")
+    val isFeatured: Boolean = false
 )

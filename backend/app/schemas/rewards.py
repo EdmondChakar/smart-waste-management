@@ -6,6 +6,7 @@ class RewardCreate(BaseModel):
     description: str | None = None
     points_cost: int = Field(ge=0)
     is_active: bool = True
+    is_featured: bool = False
 
 
 class RewardUpdate(BaseModel):
@@ -13,6 +14,7 @@ class RewardUpdate(BaseModel):
     description: str | None = None
     points_cost: int = Field(ge=0)
     is_active: bool
+    is_featured: bool = False
 
 
 class RewardRead(BaseModel):
@@ -21,6 +23,7 @@ class RewardRead(BaseModel):
     description: str | None
     points_cost: int
     is_active: bool
+    is_featured: bool
 
 
 class RewardListResponse(BaseModel):

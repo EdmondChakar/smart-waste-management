@@ -36,6 +36,14 @@ const unsigned long GPS_NO_DATA_WARNING_INTERVAL = 1000;
 const unsigned long IR_POLL_INTERVAL = 50;
 const unsigned long NODEMCU_SERIAL_SEND_INTERVAL = 5000;
 const unsigned long NODEMCU_SERIAL_BAUD = 115200;
+const float LOAD_CELL_CALIBRATION_FACTOR = 443.95f;
+const float LOAD_CELL_ZERO_DEADBAND_GRAMS = 0.10f;
+const float LOAD_CELL_GRAMS_PER_KILOGRAM = 1000.0f;
+const float BIN_EMPTY_DISTANCE_CM = 80.0f;
+const float BIN_FULL_DISTANCE_CM = 20.0f;
+const char *QR_PAYLOAD_PREFIX = "SWM";
+const int QR_PAYLOAD_VERSION = 1;
+const char *BIN_PUBLIC_CODE = "BIN-001";
 
 TinyGPSPlus gps;
 HX711_ADC LoadCell(HX711_DOUT_PIN, HX711_SCK_PIN);
@@ -87,6 +95,13 @@ void showQRCodeScreen(const char *text);
 void calibrate();
 void changeSavedCalFactor();
 void sendNodeMcuSerialTestLine();
+float sanitizeLoadCellWeightGrams(float rawWeightGrams);
+float calculateFillPercentage(float measuredDistanceCm);
+bool buildCompactQrPayload(String &payloadOut, int itemCount);
+unsigned long buildQrEpochTimestamp();
+bool isLeapYear(int year);
+int daysInMonth(int year, int month);
+unsigned long daysSinceUnixEpoch(int year, int month, int day);
 
 void setup() {
   Serial.begin(115200);
@@ -127,15 +142,17 @@ void setup() {
     while (true) {
     }
   } else {
-    LoadCell.setCalFactor(1.0);
+    LoadCell.setCalFactor(LOAD_CELL_CALIBRATION_FACTOR);
     Serial.println("Startup is complete");
+    Serial.print("Load cell calibration factor: ");
+    Serial.println(LOAD_CELL_CALIBRATION_FACTOR, 2);
   }
 
   while (!LoadCell.update()) {
     feedGPSData();
   }
 
-  calibrate();
+  Serial.println("Startup calibration skipped. Send 'r' in Serial Monitor only when you want to recalibrate manually.");
 
   clearStartTime = millis();
   ultrasonicLastBatchDoneTime = millis() - ULTRASONIC_BATCH_DELAY;
@@ -311,8 +328,13 @@ void handleUltrasonic() {
   }
 
   if (ultrasonicValidCount == 0) {
-    latestUltrasonicAverageCm = -1.0;
-    Serial.println("No valid echo");
+    if (latestUltrasonicAverageCm >= 0.0f) {
+      Serial.print("No valid echo. Keeping last valid distance: ");
+      Serial.print(latestUltrasonicAverageCm);
+      Serial.println(" cm");
+    } else {
+      Serial.println("No valid echo and no previous valid distance yet.");
+    }
   } else {
     float avg = ultrasonicSum / ultrasonicValidCount;
     latestUltrasonicAverageCm = avg;
@@ -327,22 +349,21 @@ void handleUltrasonic() {
 
 void handleLoadCell() {
   static boolean newDataReady = false;
-  const int serialPrintInterval = 0;
 
   if (LoadCell.update()) {
     newDataReady = true;
   }
 
   if (newDataReady) {
-    if (millis() > loadCellPrintTimestamp + serialPrintInterval) {
-      float i = LoadCell.getData();
-      latestLoadCellValue = i;
-      latestLoadCellValueValid = true;
-      Serial.print("Load_cell output val: ");
-      Serial.println(i);
-      newDataReady = false;
-      loadCellPrintTimestamp = millis();
-    }
+    // The current load-cell calibration returns grams, so convert to kilograms
+    // before sending the reading to the NodeMCU/backend.
+    float rawWeightGrams = LoadCell.getData();
+    float safeWeightGrams = sanitizeLoadCellWeightGrams(rawWeightGrams);
+    float safeWeightKg = safeWeightGrams / LOAD_CELL_GRAMS_PER_KILOGRAM;
+    latestLoadCellValue = safeWeightKg;
+    latestLoadCellValueValid = true;
+    newDataReady = false;
+    loadCellPrintTimestamp = millis();
   }
 
   if (Serial.available() > 0) {
@@ -355,10 +376,46 @@ void handleLoadCell() {
       changeSavedCalFactor();
     }
   }
+}
 
-  if (LoadCell.getTareStatus() == true) {
-    Serial.println("Tare complete");
+float sanitizeLoadCellWeightGrams(float rawWeightGrams) {
+  if (rawWeightGrams > -LOAD_CELL_ZERO_DEADBAND_GRAMS &&
+      rawWeightGrams < LOAD_CELL_ZERO_DEADBAND_GRAMS) {
+    return 0.0f;
   }
+
+  if (rawWeightGrams < 0.0f) {
+    return 0.0f;
+  }
+
+  return rawWeightGrams;
+}
+
+float calculateFillPercentage(float measuredDistanceCm) {
+  if (measuredDistanceCm < 0.0f) {
+    return -1.0f;
+  }
+
+  if (measuredDistanceCm >= BIN_EMPTY_DISTANCE_CM) {
+    return 0.0f;
+  }
+
+  if (measuredDistanceCm <= BIN_FULL_DISTANCE_CM) {
+    return 100.0f;
+  }
+
+  float usableDepthCm = BIN_EMPTY_DISTANCE_CM - BIN_FULL_DISTANCE_CM;
+  float fillPct = ((BIN_EMPTY_DISTANCE_CM - measuredDistanceCm) / usableDepthCm) * 100.0f;
+
+  if (fillPct < 0.0f) {
+    return 0.0f;
+  }
+
+  if (fillPct > 100.0f) {
+    return 100.0f;
+  }
+
+  return fillPct;
 }
 
 void handleIRQrBuzzer() {
@@ -397,15 +454,23 @@ void handleIRQrBuzzer() {
 
     if (count > 0 && currentSensorState == HIGH && clearStartTime > 0 &&
         millis() - clearStartTime >= qrDelay) {
-      currentMode = QR_MODE;
-      qrStartTime = millis();
-      qrValue = String(count);
+      String nextQrValue;
+      if (!buildCompactQrPayload(nextQrValue, count)) {
+        clearStartTime = millis();
+        digitalWrite(BUZZER_PIN, LOW);
+        Serial.println("QR delayed: GPS date/time not valid yet.");
+        showCountScreen("WAIT GPS");
+      } else {
+        currentMode = QR_MODE;
+        qrStartTime = millis();
+        qrValue = nextQrValue;
 
-      digitalWrite(BUZZER_PIN, LOW);
-      Serial.print("Showing QR with value: ");
-      Serial.println(qrValue);
+        digitalWrite(BUZZER_PIN, LOW);
+        Serial.print("Showing QR with value: ");
+        Serial.println(qrValue);
 
-      showQRCodeScreen(qrValue.c_str());
+        showQRCodeScreen(qrValue.c_str());
+      }
     }
 
     lastSensorState = currentSensorState;
@@ -510,6 +575,95 @@ void showQRCodeScreen(const char *text) {
   }
 
   display.display();
+}
+
+bool buildCompactQrPayload(String &payloadOut, int itemCount) {
+  unsigned long epochTimestamp = buildQrEpochTimestamp();
+  if (epochTimestamp == 0) {
+    return false;
+  }
+
+  payloadOut = String(QR_PAYLOAD_PREFIX);
+  payloadOut += "|";
+  payloadOut += String(QR_PAYLOAD_VERSION);
+  payloadOut += "|";
+  payloadOut += String(BIN_PUBLIC_CODE);
+  payloadOut += "|";
+  payloadOut += String(itemCount);
+  payloadOut += "|";
+  payloadOut += String(epochTimestamp);
+
+  return true;
+}
+
+unsigned long buildQrEpochTimestamp() {
+  if (!gps.date.isValid() || !gps.time.isValid()) {
+    return 0;
+  }
+
+  int year = gps.date.year();
+  int month = gps.date.month();
+  int day = gps.date.day();
+  int hour = gps.time.hour();
+  int minute = gps.time.minute();
+  int second = gps.time.second();
+
+  unsigned long days = daysSinceUnixEpoch(year, month, day);
+  unsigned long seconds = days * 86400UL;
+  seconds += static_cast<unsigned long>(hour) * 3600UL;
+  seconds += static_cast<unsigned long>(minute) * 60UL;
+  seconds += static_cast<unsigned long>(second);
+
+  return seconds;
+}
+
+bool isLeapYear(int year) {
+  if (year % 400 == 0) {
+    return true;
+  }
+
+  if (year % 100 == 0) {
+    return false;
+  }
+
+  return year % 4 == 0;
+}
+
+int daysInMonth(int year, int month) {
+  switch (month) {
+    case 1:
+    case 3:
+    case 5:
+    case 7:
+    case 8:
+    case 10:
+    case 12:
+      return 31;
+    case 4:
+    case 6:
+    case 9:
+    case 11:
+      return 30;
+    case 2:
+      return isLeapYear(year) ? 29 : 28;
+    default:
+      return 30;
+  }
+}
+
+unsigned long daysSinceUnixEpoch(int year, int month, int day) {
+  unsigned long days = 0;
+
+  for (int currentYear = 1970; currentYear < year; currentYear++) {
+    days += isLeapYear(currentYear) ? 366UL : 365UL;
+  }
+
+  for (int currentMonth = 1; currentMonth < month; currentMonth++) {
+    days += static_cast<unsigned long>(daysInMonth(year, currentMonth));
+  }
+
+  days += static_cast<unsigned long>(day - 1);
+  return days;
 }
 
 void calibrate() {
@@ -665,14 +819,17 @@ void sendNodeMcuSerialTestLine() {
   }
 
   lastNodeMcuSerialSend = millis();
+  float fillPct = calculateFillPercentage(latestUltrasonicAverageCm);
 
-  // Temporary serial-test contract:
+  // Current serial contract:
   // SENSOR,fill_pct,weight_kg,gps_lat,gps_lon,item_count
-  //
-  // fill_pct is currently sent as NA on purpose because the Mega sketch does
-  // not yet have a validated distance-to-fill calibration formula.
   Serial2.print("SENSOR,");
-  Serial2.print("NA,");
+  if (fillPct >= 0.0f) {
+    Serial2.print(fillPct, 1);
+  } else {
+    Serial2.print("NA");
+  }
+  Serial2.print(",");
 
   if (latestLoadCellValueValid) {
     Serial2.print(latestLoadCellValue, 2);
@@ -696,7 +853,13 @@ void sendNodeMcuSerialTestLine() {
   Serial2.print(",");
   Serial2.println(count);
 
-  Serial.print("Sent to NodeMCU: SENSOR,NA,");
+  Serial.print("Sent to NodeMCU: SENSOR,");
+  if (fillPct >= 0.0f) {
+    Serial.print(fillPct, 1);
+  } else {
+    Serial.print("NA");
+  }
+  Serial.print(",");
   if (latestLoadCellValueValid) {
     Serial.print(latestLoadCellValue, 2);
   } else {

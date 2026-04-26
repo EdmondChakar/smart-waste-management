@@ -1,9 +1,9 @@
 #include <ESP8266HTTPClient.h>
 #include <ESP8266WiFi.h>
 
-const char* WIFI_SSID = "netis_2.4G";
-const char* WIFI_PASSWORD = "SaTeH03357200";
-const char* IOT_READING_URL = "http://192.168.1.102:8000/iot/readings";
+const char* WIFI_SSID = "Edmond's S25 Ultra";
+const char* WIFI_PASSWORD = "edmond123";
+const char* IOT_READING_URL = "http://10.140.251.135:8000/iot/readings";
 
 const char* DEVICE_UID = "NODEMCU-BIN-001";
 const char* DEVICE_API_KEY = "cwJgerlBTInQ2P62jBaXB-02KQyxwKux";

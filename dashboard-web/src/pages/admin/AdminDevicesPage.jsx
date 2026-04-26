@@ -86,7 +86,7 @@ export default function AdminDevicesPage() {
         />
         <AdminStatCard
           label="Refresh interval"
-          value="30s"
+          value="10s"
           helper="Dashboard polling cycle for this page."
         />
       </section>

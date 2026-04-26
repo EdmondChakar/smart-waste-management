@@ -1,1 +1,1 @@
-export const LIVE_REFRESH_INTERVAL_MS = 30000;
+export const LIVE_REFRESH_INTERVAL_MS = 10000;

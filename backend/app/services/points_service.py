@@ -4,20 +4,38 @@ from sqlalchemy.orm import Session
 
 def get_points_balance_summary(db: Session, user_id: int) -> dict:
     query = text("""
+        WITH transaction_summary AS (
+            SELECT
+                COALESCE(SUM(
+                    CASE
+                        WHEN type = 'REDEEM' THEN -ABS(points)
+                        WHEN type = 'EARN' THEN ABS(points)
+                        ELSE points
+                    END
+                ), 0) AS current_points_balance,
+                COALESCE(SUM(CASE WHEN type = 'EARN' THEN ABS(points) ELSE 0 END), 0) AS total_earned,
+                COALESCE(SUM(CASE WHEN type = 'ADJUST' THEN points ELSE 0 END), 0) AS total_adjusted,
+                COUNT(*) AS total_transactions
+            FROM points_txn
+            WHERE user_id = :user_id
+        ),
+        redemption_summary AS (
+            SELECT
+                COALESCE(SUM(r.points_spent), 0) AS total_redeemed
+            FROM redemptions r
+            INNER JOIN redemption_statuses rs ON rs.status_id = r.status_id
+            WHERE
+                r.user_id = :user_id
+                AND rs.status_code <> 'CANCELLED'
+        )
         SELECT
-            COALESCE(SUM(
-                CASE
-                    WHEN type = 'REDEEM' THEN -ABS(points)
-                    WHEN type = 'EARN' THEN ABS(points)
-                    ELSE points
-                END
-            ), 0) AS current_points_balance,
-            COALESCE(SUM(CASE WHEN type = 'EARN' THEN ABS(points) ELSE 0 END), 0) AS total_earned,
-            COALESCE(SUM(CASE WHEN type = 'REDEEM' THEN ABS(points) ELSE 0 END), 0) AS total_redeemed,
-            COALESCE(SUM(CASE WHEN type = 'ADJUST' THEN points ELSE 0 END), 0) AS total_adjusted,
-            COUNT(*) AS total_transactions
-        FROM points_txn
-        WHERE user_id = :user_id;
+            ts.current_points_balance,
+            ts.total_earned,
+            rs.total_redeemed,
+            ts.total_adjusted,
+            ts.total_transactions
+        FROM transaction_summary ts
+        CROSS JOIN redemption_summary rs;
     """)
 
     row = db.execute(query, {"user_id": user_id}).fetchone()

@@ -7,6 +7,7 @@ export const APP_ROUTES = {
   adminUsers: "/admin/users",
   adminDevices: "/admin/devices",
   adminRedemptions: "/admin/redemptions",
+  adminRewards: "/admin/rewards",
   adminBinDetailPattern: "/admin/bins/:binId"
 };
 

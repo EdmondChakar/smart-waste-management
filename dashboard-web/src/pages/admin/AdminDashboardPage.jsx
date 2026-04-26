@@ -117,7 +117,7 @@ export default function AdminDashboardPage() {
             </div>
             <div>
               <dt>Refresh interval</dt>
-              <dd>30 seconds</dd>
+              <dd>10 seconds</dd>
             </div>
           </dl>
         </article>

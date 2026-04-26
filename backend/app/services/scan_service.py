@@ -10,6 +10,9 @@ from app.services.points_service import get_points_balance_summary
 
 TEMP_QR_MAX_AGE = timedelta(minutes=2)
 TEMP_QR_FUTURE_TOLERANCE = timedelta(seconds=30)
+COMPACT_QR_PREFIX = "SWM"
+COMPACT_QR_SEPARATOR = "|"
+COMPACT_QR_PART_COUNT = 5
 
 
 class TemporaryOfflineQrPayload(BaseModel):
@@ -129,6 +132,15 @@ def claim_scan_from_qr(db: Session, current_user: dict, qr_raw: str) -> dict:
 
 
 def _parse_qr_payload(qr_raw: str) -> TemporaryOfflineQrPayload:
+    qr_raw = qr_raw.strip()
+
+    if qr_raw.startswith("{"):
+        return _parse_json_qr_payload(qr_raw)
+
+    return _parse_compact_qr_payload(qr_raw)
+
+
+def _parse_json_qr_payload(qr_raw: str) -> TemporaryOfflineQrPayload:
     try:
         payload_data = json.loads(qr_raw)
     except json.JSONDecodeError as exc:
@@ -137,6 +149,50 @@ def _parse_qr_payload(qr_raw: str) -> TemporaryOfflineQrPayload:
             detail="QR code payload is not valid JSON"
         ) from exc
 
+    return _validate_qr_payload_data(payload_data)
+
+
+def _parse_compact_qr_payload(qr_raw: str) -> TemporaryOfflineQrPayload:
+    parts = [part.strip() for part in qr_raw.split(COMPACT_QR_SEPARATOR)]
+
+    if len(parts) != COMPACT_QR_PART_COUNT:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="QR code payload is not valid compact format"
+        )
+
+    prefix, version, bin_code, item_count, timestamp = parts
+
+    if prefix != COMPACT_QR_PREFIX:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="QR code payload prefix is invalid"
+        )
+
+    payload_data = {
+        "v": version,
+        "bin_code": bin_code,
+        "item_count": item_count,
+        "ts": _parse_compact_qr_timestamp(timestamp),
+    }
+
+    return _validate_qr_payload_data(payload_data)
+
+
+def _parse_compact_qr_timestamp(timestamp: str) -> datetime | str:
+    if timestamp.isdigit():
+        try:
+            return datetime.fromtimestamp(int(timestamp), tz=timezone.utc)
+        except (OverflowError, OSError, ValueError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="QR code payload timestamp is invalid"
+            ) from exc
+
+    return timestamp
+
+
+def _validate_qr_payload_data(payload_data: dict) -> TemporaryOfflineQrPayload:
     try:
         return TemporaryOfflineQrPayload.model_validate(payload_data)
     except ValidationError as exc:

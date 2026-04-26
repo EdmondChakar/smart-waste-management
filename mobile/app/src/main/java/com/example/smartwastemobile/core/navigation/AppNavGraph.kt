@@ -103,6 +103,7 @@ fun AppNavGraph() {
             isSubmittingRedemption = mainUiState.isSubmittingRedemption,
             redeemingRewardId = mainUiState.redeemingRewardId,
             redemptionFeedbackMessage = mainUiState.redemptionFeedbackMessage,
+            recentlyRedeemedRewardId = mainUiState.recentlyRedeemedRewardId,
             isSubmittingScan = mainUiState.isSubmittingScan,
             scanErrorMessage = mainUiState.scanErrorMessage,
             lastScanResult = mainUiState.lastScanResult,

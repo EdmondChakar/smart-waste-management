@@ -149,7 +149,8 @@ CREATE TABLE rewards (
   title        VARCHAR(255),
   description  TEXT,
   points_cost  INTEGER,
-  is_active    BOOLEAN
+  is_active    BOOLEAN,
+  is_featured  BOOLEAN NOT NULL DEFAULT FALSE
 );
 
 ----------------------------------------------------------------------------------------------------------

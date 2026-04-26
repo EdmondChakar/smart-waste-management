@@ -43,6 +43,9 @@ export default function AdminLayout() {
           <NavLink to={APP_ROUTES.adminDevices} className={getNavClassName}>
             Devices
           </NavLink>
+          <NavLink to={APP_ROUTES.adminRewards} className={getNavClassName}>
+            Rewards
+          </NavLink>
           <NavLink to={APP_ROUTES.adminRedemptions} className={getNavClassName}>
             Redemptions
           </NavLink>
